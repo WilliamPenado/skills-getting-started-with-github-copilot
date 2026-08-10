@@ -103,10 +103,8 @@ def signup_for_activity(activity_name: str, email: str):
     activity = activities[activity_name]
 
     normalized_email = normalize_email(email)
-    normalized_participants = [normalize_email(participant) for participant in activity["participants"]]
-
     # Check if the student is already signed up
-    if normalized_email in normalized_participants:
+    if normalized_email in activity["participants"]:
         raise HTTPException(status_code=400, detail="Student already signed up for this activity")
 
     # Check if the activity is full

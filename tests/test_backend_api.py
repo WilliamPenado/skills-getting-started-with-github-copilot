@@ -42,6 +42,23 @@ def test_signup_successfully_adds_participant(client):
     assert email in activities[activity_name]["participants"]
 
 
+def test_signup_successfully_normalizes_participant_email(client):
+    # Arrange
+    activity_name = "Chess Club"
+    email = "  NEW.STUDENT@MERGINGTON.EDU "
+    endpoint = f"/activities/{activity_name}/signup"
+    expected_payload = {"message": f"Signed up new.student@mergington.edu for {activity_name}"}
+
+    # Act
+    response = client.post(endpoint, params={"email": email})
+    activities = client.get("/activities").json()
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json() == expected_payload
+    assert "new.student@mergington.edu" in activities[activity_name]["participants"]
+
+
 def test_signup_returns_404_for_unknown_activity(client):
     # Arrange
     endpoint = "/activities/Unknown Club/signup"
@@ -62,6 +79,22 @@ def test_signup_returns_400_when_already_signed_up(client):
     # Arrange
     endpoint = "/activities/Chess Club/signup"
     email = "michael@mergington.edu"
+
+    # Act
+    response = client.post(
+        endpoint,
+        params={"email": email},
+    )
+
+    # Assert
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Student already signed up for this activity"}
+
+
+def test_signup_returns_400_when_already_signed_up_with_case_and_whitespace_variation(client):
+    # Arrange
+    endpoint = "/activities/Chess Club/signup"
+    email = "  Michael@Mergington.edu "
 
     # Act
     response = client.post(
@@ -146,3 +179,22 @@ def test_remove_participant_returns_404_when_not_signed_up(client):
     # Assert
     assert response.status_code == 404
     assert response.json() == {"detail": "Participant not found in this activity"}
+
+
+def test_remove_participant_successfully_with_case_and_whitespace_variation(client):
+    # Arrange
+    activity_name = "Drama Club"
+    email = "  LUCAS@MERGINGTON.EDU "
+    endpoint = f"/activities/{activity_name}/participants"
+
+    # Act
+    response = client.delete(
+        endpoint,
+        params={"email": email},
+    )
+    activities = client.get("/activities").json()
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json() == {"message": "Removed lucas@mergington.edu from Drama Club"}
+    assert "lucas@mergington.edu" not in activities[activity_name]["participants"]
